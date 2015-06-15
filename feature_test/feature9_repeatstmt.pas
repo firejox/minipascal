@@ -7,4 +7,5 @@ BEGIN
     REPEAT 
         sum := sum - 1;
     UNTIL sum = 0;
+    writeln(sum); 
 END.

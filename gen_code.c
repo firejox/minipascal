@@ -591,7 +591,7 @@ void do_branch (EXPR *e, int ontrue, int label)
         gen_inst ("~ % @", (ontrue ? "bnez" : "beqz"), ereg, label);
 #elif GEN_ASSEMBLER == nasm
         int ereg = get_expr_in_reg (e, REG_EAX);
-        gen_inst ("test %, 0", ereg);
+        gen_inst ("test %, %", ereg, ereg);
         gen_inst ("~ @", (ontrue ? "jnz" : "jz"), label);
 #endif
         return;
@@ -721,8 +721,8 @@ void gen_stmt_case (STMTCASE *sc)
         gen_inst ("beq % % @", ereg, creg, crlist->label);
 #elif GEN_ASSEMBLER == nasm
         int creg = get_expr_in_reg (crlist->expr, REG_EBX);
-        gen_inst ("test %, %", ereg, creg);
-        gen_inst ("jz @", crlist->label);
+        gen_inst ("cmp %, %", ereg, creg);
+        gen_inst ("je @", crlist->label);
 #endif
     }
 #if GEN_ASSEMBLER == spim
@@ -1532,12 +1532,14 @@ static void gen_op_immed (int op, int reg, int num)
             gen_inst ("mov [%], %", REG_SP, REG_EAX);
             break;
         case DIV_: 
+            gen_inst ("mov %, 0", REG_EDX);
             gen_inst ("mov %, [%]", REG_EAX, REG_SP);
             gen_inst ("mov [%], dword #", REG_SP, num);
             gen_inst ("div [%]", REG_SP);
             gen_inst ("mov [%], %", REG_SP, REG_EAX);
             break;
         case MOD_:  
+            gen_inst ("mov %, 0", REG_EDX);
             gen_inst ("mov %, [%]", REG_EAX, REG_SP);
             gen_inst ("mov [%], dword #", REG_SP, num);
             gen_inst ("div [%]", REG_SP);
@@ -1568,10 +1570,7 @@ static void gen_op_immed (int op, int reg, int num)
             break;
         case '>':  
             gen_inst ("sub [%], dword #", REG_SP, num);
-            gen_inst ("pushfd");
-            gen_inst ("pop %", reg);
-            gen_inst ("and %, 192", reg);
-            gen_inst ("sub %, 64", reg);
+            gen_inst ("neg dword [%]", REG_SP);
             gen_inst ("pushfd");
             gen_inst ("pop %", reg);
             gen_inst ("and %, 128", reg);
@@ -1597,10 +1596,7 @@ static void gen_op_immed (int op, int reg, int num)
             break;
         case LE_:  
             gen_inst ("sub [%], dword #", REG_SP, num);
-            gen_inst ("pushfd");
-            gen_inst ("pop %", reg);
-            gen_inst ("and %, 192", reg);
-            gen_inst ("sub %, 64", reg);
+            gen_inst ("neg dword [%]", REG_SP);
             gen_inst ("pushfd");
             gen_inst ("pop %", reg);
             gen_inst ("and %, 128", reg);
@@ -1625,11 +1621,13 @@ static void gen_op_left_immed (int op, int reg, int num)
             gen_inst ("mov [%], %", REG_SP, REG_EAX);
             break;
         case DIV_: 
+            gen_inst ("mov %, 0", REG_EDX);
             gen_inst ("mov %, dword #", REG_EAX, num);
             gen_inst ("div [%]", REG_SP);
             gen_inst ("mov [%], %", REG_SP, REG_EAX);
             break;
         case MOD_:  
+            gen_inst ("mov %, 0", REG_EDX);
             gen_inst ("mov %, dword #", REG_EAX, num);
             gen_inst ("div [%]", REG_SP);
             gen_inst ("mov [%], %", REG_SP, REG_EDX);
@@ -1659,10 +1657,7 @@ static void gen_op_left_immed (int op, int reg, int num)
             break;
         case '<':  
             gen_inst ("sub [%], dword #", REG_SP, num);
-            gen_inst ("pushfd");
-            gen_inst ("pop %", reg);
-            gen_inst ("and %, 192", reg);
-            gen_inst ("sub %, 64", reg);
+            gen_inst ("neg dword [%]", REG_ESP);
             gen_inst ("pushfd");
             gen_inst ("pop %", reg);
             gen_inst ("and %, 128", reg);
@@ -1688,10 +1683,7 @@ static void gen_op_left_immed (int op, int reg, int num)
             break;
         case GE_:  
             gen_inst ("sub [%], dword #", REG_SP, num);
-            gen_inst ("pushfd");
-            gen_inst ("pop %", reg);
-            gen_inst ("and %, 192", reg);
-            gen_inst ("sub %, 64", reg);
+            gen_inst ("neg dword [%]", REG_ESP);
             gen_inst ("pushfd");
             gen_inst ("pop %", reg);
             gen_inst ("and %, 128", reg);
@@ -1724,11 +1716,13 @@ static void gen_op_bin (int op, int reg)
             gen_inst ("mov [% + 4], %", REG_SP, REG_EAX);
             break;
         case DIV_: 
+            gen_inst ("mov %, 0", REG_EDX);
             gen_inst ("mov %, [% + 4]", REG_EAX, REG_SP);
             gen_inst ("div [%]", REG_SP);
             gen_inst ("mov [% + 4], %", REG_SP, REG_EAX);
             break;
         case MOD_:  
+            gen_inst ("mov %, 0", REG_EDX);
             gen_inst ("mov %, [% + 4]", REG_EAX, REG_SP);
             gen_inst ("div [%]", REG_SP);
             gen_inst ("mov [% + 4], %", REG_SP, REG_EDX);
@@ -1767,17 +1761,13 @@ static void gen_op_bin (int op, int reg)
             gen_inst ("sub %, [% + 4]", reg, REG_SP);
             gen_inst ("pushfd");
             gen_inst ("pop %", reg);
-            gen_inst ("and %, 192", reg);
-            gen_inst ("sub %, 64", reg);
-            gen_inst ("pushfd");
-            gen_inst ("pop %", reg);
             gen_inst ("and %, 128", reg);
             gen_inst ("shl %, 7", reg);
             gen_inst ("mov [% + 4], %", REG_SP, reg);
             break;
         case GE_:  
-            gen_inst ("mov %, [%]", reg, REG_SP); 
-            gen_inst ("sub %, [% + 4]", reg, REG_SP);
+            gen_inst ("mov %, [% + 4]", reg, REG_SP); 
+            gen_inst ("sub %, [%]", reg, REG_SP);
             gen_inst ("pushfd");
             gen_inst ("pop %", reg);
             gen_inst ("and %, 128", reg);
@@ -1786,22 +1776,18 @@ static void gen_op_bin (int op, int reg)
             gen_inst ("mov [% + 4], %", REG_SP, reg);
             break;
         case '<': 
-            gen_inst ("mov %, [%]", reg, REG_SP); 
-            gen_inst ("sub %, [% + 4]", reg, REG_SP);
+            gen_inst ("mov %, [% + 4]", reg, REG_SP); 
+            gen_inst ("sub %, [%]", reg, REG_SP);
             gen_inst ("pushfd");
             gen_inst ("pop %", reg);
             gen_inst ("and %, 128", reg);
             gen_inst ("shl %, 7", reg);
             gen_inst ("mov [% + 4], %", REG_SP, reg);
             break;
-        case LE_: 
+        case LE_: /*0<= r-l*/
             gen_inst ("mov %, [%]", reg, REG_SP); 
             gen_inst ("sub %, [% + 4]", reg, REG_SP); 
-            gen_inst ("pushfd");
-            gen_inst ("pop %", reg);
-            gen_inst ("and %, 192", reg);
-            gen_inst ("sub %, 64", reg);
-            gen_inst ("pushfd");
+            gen_inst ("pushfd");;
             gen_inst ("pop %", reg);
             gen_inst ("and %, 128", reg);
             gen_inst ("shl %, 7", reg);
@@ -1863,7 +1849,7 @@ void gen_expr_binop (int op, EXPR *l, EXPR *r, int reg)
         int rreg = get_expr_in_reg (r, REG_EAX);
         int num = get_const_num (l);
         if (op == DIV_ || op == MOD_) {
-            gen_inst ("test %, 0", rreg);
+            gen_inst ("test %, %", rreg, rreg);
             gen_inst ("jz BADDIV");
         }
         gen_inst ("push %", rreg);
@@ -1876,7 +1862,7 @@ void gen_expr_binop (int op, EXPR *l, EXPR *r, int reg)
         int rreg = get_expr_in_reg (r, REG_EBX);
         gen_inst ("push %", rreg);
         if (op == DIV_ || op == MOD_) {
-            gen_inst ("test %, 0", rreg);
+            gen_inst ("test %, %", rreg, rreg);
             gen_inst ("jz BADDIV");       
         }
         gen_op_bin (op, reg);
@@ -1914,7 +1900,7 @@ void gen_expr_deref (EXPR *e, EXPR *eu)
     else if (ureg != reg)
         gen_inst ("move % %", reg, ureg);
 #elif GEN_ASSEMBLER == nasm
-    gen_inst ("test %, 0", ureg);
+    gen_inst ("test %, %", ureg, ureg);
     gen_inst ("jz BADPTR");
     if (is_non_addr_expr (e))
         gen_inst ("mov %, [%]", reg, ureg);
@@ -2333,7 +2319,7 @@ void gen_expr (EXPR *e)
 #if GEN_ASSEMBLER == spim
         gen_store (e->reg_name, REG_T9, e);
 #elif GEN_ASSEMBLER == nasm
-    gen_store (e->reg_name, REG_EAX, e);
+        gen_store (e->reg_name, REG_EAX, e);
 #endif
     return;
 }
