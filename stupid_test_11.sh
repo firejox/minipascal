@@ -11,7 +11,7 @@ if [ $# == 1 ]; then
     if [ -d "$1" ]; then
         test -e ./mpc && make clean
         make
-        find $1 -name "*.pas"|xargs -n 1 -d '\n' $0
+        find $1 -name "*.pas" -type f|xargs -n 1 -d '\n' $0
         make clean
     elif [ -f "$1" ] && [ "${1##*.}" == "pas" ]; then
         echo '==========start '$1' =============='

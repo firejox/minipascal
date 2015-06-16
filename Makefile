@@ -1,5 +1,5 @@
 CC = gcc
-CH_ASM = nasm
+CH_ASM = spim
 CFLAGS = -g -Wall -DGEN_ASSEMBLER=$(CH_ASM)
 YACC = bison
 YFLAGS = -t -d -v -Wall
