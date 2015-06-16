@@ -15,8 +15,8 @@ if [ $# == 1 ]; then
         make clean
     elif [ -f "$1" ] && [ "${1##*.}" == "pas" ]; then
         echo '==========start '$1' =============='
-        ./mpc $1
-        nasm -f elf -g ${1%.*}.asm -I ./lib/
+        ./mpc $1 ${1%.*}.s
+        nasm -f elf -g ${1%.*}.s -I ./lib/
         ld -m elf_i386 ${1%.*}.o ./lib/libasm.a -o ${1%.*}
         ./${1%.*}
         echo
