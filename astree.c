@@ -691,7 +691,7 @@ void print_decllist (DECLLIST *dl)
       print_indent ();
       print_decl (dl->this);
     }
-    print_finish (")");
+    print_finish ();
   }
 }
 

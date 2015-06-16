@@ -1,7 +1,7 @@
 
 #include "config.h"
 
-#if GEN_ASSEMBLER == spim
+#if (GEN_ASSEMBLER + 0) == spim
 # define TOTAL_REGS 32
 # define ALLOC_REGS 4
 /* above should correspond with number of registers given to allocator */
@@ -54,7 +54,7 @@
 # define REG_FP  REG_S8
 # define REG_SL  REG_S7
 
-#elif GEN_ASSEMBLER == nasm
+#elif (GEN_ASSEMBLER + 0) == nasm
 #define TOTAL_REGS 9
 #define ALLOC_REGS 4
 
@@ -74,14 +74,17 @@
 
 #define REGN(REG) #REG
 
+#else
+#define TOTAL_REGS 0
+
 #endif
 
 /* some additional useful definitions */
 
 # define MAX_FRAME_SIZE 32767
-#if GEN_ASSEMBLER == spim
+#if (GEN_ASSEMBLER + 0) == spim
 # define LINKAGE_SIZE 12
-#elif GEN_ASSEMBLER == nasm
+#elif (GEN_ASSEMBLER + 0) == nasm
 #define LINKAGE_SIZE 8
 #endif
 
